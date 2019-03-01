@@ -4,14 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "CUDABackground.h"
-#include "FileReader.h"
 #include <atomic>
 #include <iostream>
 #include <pplinterface.h>
 #include "FileReader2.h"
 #include "UserTableReader.h"
 using namespace std;
-
+/*
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 cudaError_t findFrequents(int**main, unsigned int *counts, int mainSize, int countsSize);
 
@@ -31,25 +30,25 @@ __global__ void findFrequents(int**mainArray, unsigned int *counts)
 	{
 		//atomicAdd(counts + mainArray[i][j], 1);
 	}
-}
+}*/
 
-short ** createArr(int size)
+float ** createArr(int size)
 {
-	short ** arr = (short**)malloc(sizeof(short*) * size);
-	for(int i = 0; i < size; i++)
+	float ** arr = (float**)malloc(sizeof(float*) * size);
+	for(int i = 0; i < size+1; i++)
 	{
-		arr[i] = (short*)malloc(sizeof(short) * size + 1);
+		arr[i] = (float*)malloc(sizeof(float) * size + 1);
 	}
 	return arr;
 }
 
-short ** createBlankUserMatrix(UserTableReader r, int columnMax)
+float ** createBlankUserMatrix(UserTableReader r, int columnMax)
 {
-	short ** arr = (short**)malloc(sizeof(short*) * columnMax+1);
+	float ** arr = (float**)malloc(sizeof(float*) * columnMax+1);
 
-	for (int i = 0; i < r.users.size(); i++)
+	for (int i = 0; i < r.users.size() +1; i++)
 	{
-		arr[i] = (short*)malloc(sizeof(short) * columnMax + 1);
+		arr[i] = (float*)malloc(sizeof(float) * columnMax + 1);
 	}
 	return arr;
 }
@@ -58,14 +57,14 @@ bool ** createBlankUserDidReviewMatrix(UserTableReader r, int columnMax)
 {
 	bool ** arr = (bool**)malloc(sizeof(bool*) * columnMax + 1);
 
-	for (int i = 0; i < r.users.size(); i++)
+	for (int i = 0; i < r.users.size() +1; i++)
 	{
 		arr[i] = (bool*)malloc(sizeof(bool) * columnMax + 1);
 	}
 	return arr;
 }
 
-void populateUserReviewMatrix(short **userReviewMatrix, bool **originalReviewMatrix, UserTableReader r, MovieReader m)
+void populateUserReviewMatrix(float **userReviewMatrix, bool **originalReviewMatrix, UserTableReader r, MovieReader m)
 {
 	auto vec = r.users;
 	for (auto it = vec.begin(); it != vec.end(); ++it)
@@ -77,12 +76,13 @@ void populateUserReviewMatrix(short **userReviewMatrix, bool **originalReviewMat
 	}
 }
 
-void doAlgo()
+cudaError_t doAlgo()
 {
+	//int cudaCores = cuda.calculateCores();
 	MovieReader m = MovieReader("movie.csv");
 	UserTableReader r = UserTableReader("ratings.csv");
-	short ** movieMatrix = createArr(m.movieCount);
-	short ** userReviewMatrix = createBlankUserMatrix(r, m.movieCount);
+	float ** movieMatrix = createArr(m.movieCount);
+	float ** userReviewMatrix = createBlankUserMatrix(r, m.movieCount);
 	bool ** originalReviewMatrix = createBlankUserDidReviewMatrix(r, m.movieCount);
 	populateUserReviewMatrix(userReviewMatrix, originalReviewMatrix, r, m);
 	short ** d_movieMatrix;
@@ -98,47 +98,18 @@ void doAlgo()
 	//short** temp_d_ptrs = (short **)malloc(sizeof(short*) * mainSize);
 	for (int i = 0; i < m.movieCount; i++)
 	{
-		cudaMalloc((void**)&temp_d_ptrs[i], sizeof(int)* (main[i][0] + 1)); // allocate for 1 int in each int pointer
+		//cudaMalloc((void**)&temp_d_ptrs[i], sizeof(int)* (main[i][0] + 1)); // allocate for 1 int in each int pointer
 		//cudaMemcpy(temp, main[i], sizeof(int) * getsize, cudaMemcpyHostToDevice); // copy data
 		//cudaMemcpy(devMain + i, &temp, sizeof(int*), cudaMemcpyHostToDevice);
 	}
 
 
 Error:
-	cudaFree();
-	cudaFree();
-
+	//cudaFree();
+	//cudaFree();
 	return cudaStatus;
-
-
-
 }
 
-cudaError_t mallocCuda()
-{
-	cudaError_t cudaStatus;
-
-	cudaStatus = cudaMalloc((void**)&devMain, mainSize * sizeof(int*));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
-		goto Error;
-	}
-	int** temp_d_ptrs = (int **)malloc(sizeof(int*) * mainSize);
-	for (int i = 0; i < m; i++)
-	{
-		cudaMalloc((void**)&temp_d_ptrs[i], sizeof(int)* (main[i][0] + 1)); // allocate for 1 int in each int pointer
-		//cudaMemcpy(temp, main[i], sizeof(int) * getsize, cudaMemcpyHostToDevice); // copy data
-		//cudaMemcpy(devMain + i, &temp, sizeof(int*), cudaMemcpyHostToDevice);
-	}
-
-
-Error:
-	cudaFree();
-	cudaFree();
-
-	return cudaStatus;
-
-}
 
 
 int main()
@@ -146,79 +117,23 @@ int main()
 
 	CUDABackground cuda = CUDABackground();
 	doAlgo();
-	FileReader f = FileReader("data.txt");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	int cudaCores = cuda.calculateCores();
-	unsigned int * frequency = (unsigned int *)malloc(sizeof(unsigned int) * f.maxNumber);
-	for (int i = 0; i < f.maxNumber; i++)
-	{
-		frequency[i] = 0;
-	}
-	for (int i = 0; i < 50; i++)
-	{
-		printf("\n%d: ", i);
-		for (int j = 0; j < f.master[i][0];j++)
-			printf("%d,", f.master[i][j]);
-	}
-	cout<<frequency[0];
-	1 + 1;
-	cudaError_t cudaStatus = findFrequents(f.master, frequency, f.count, f.maxNumber);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "addWithCuda failed!");
-		return 1;
-	}
-	int test2 = frequency[0];
-
-
-
-
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    int c[arraySize] = { 0 };
-
-    // Add vectors in parallel.
-    //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!");
-        return 1;
-    }
-
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4]);
-
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
-
-    return 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 cudaError_t findFrequents(int* main[], unsigned int *counts, int mainSize, int countsSize)
 {
 	int **devMain = 0;
@@ -374,3 +289,4 @@ Error:
     
     return cudaStatus;
 }
+*/

@@ -82,7 +82,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CUDABackground.h" />
-    <ClInclude Include="FileReader.h" />
     <ClInclude Include="filereader2.h" />
     <ClInclude Include="Movie.h" />
     <ClInclude Include="MovieRating.h" />
@@ -91,7 +90,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CUDABackground.cpp" />
-    <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="filereader2.cpp" />
     <ClCompile Include="Movie.cpp" />
     <ClCompile Include="MovieRating.cpp" />
@@ -103,17 +101,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="movies.csv" />
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.targets" />
-    <Import Project="..\packages\boost.1.69.0.0\build\boost.targets" Condition="Exists('..\packages\boost.1.69.0.0\build\boost.targets')" />
   </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\boost.1.69.0.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.69.0.0\build\boost.targets'))" />
-  </Target>
 </Project>
