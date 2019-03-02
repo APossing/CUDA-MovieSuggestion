@@ -32,6 +32,14 @@ __global__ void findFrequents(int**mainArray, unsigned int *counts)
 	}
 }*/
 
+__global__ void test(float**mainArray)
+{
+	int i = threadIdx.x / 50;
+	int j = threadIdx.x % 50;
+	printf("%d:\t%f\n", threadIdx.x, mainArray[1][threadIdx.x]);
+
+}
+
 float ** createArr(int size)
 {
 	float ** arr = (float**)malloc(sizeof(float*) * size);
@@ -49,6 +57,10 @@ float ** createBlankUserMatrix(UserTableReader r, int columnMax)
 	for (int i = 0; i < r.users.size() +1; i++)
 	{
 		arr[i] = (float*)malloc(sizeof(float) * columnMax + 1);
+		for (int j = 0; j < r.users.size() + 1; j++)
+		{
+			arr[i][j] = 0.0;
+		}
 	}
 	return arr;
 }
@@ -60,6 +72,10 @@ bool ** createBlankUserDidReviewMatrix(UserTableReader r, int columnMax)
 	for (int i = 0; i < r.users.size() +1; i++)
 	{
 		arr[i] = (bool*)malloc(sizeof(bool) * columnMax + 1);
+		for (int j = 0; j < r.users.size() + 1; j++)
+		{
+			arr[i][j] = false;
+		}
 	}
 	return arr;
 }
@@ -72,6 +88,7 @@ void populateUserReviewMatrix(float **userReviewMatrix, bool **originalReviewMat
 		for (auto sit = (*it).ratedMovies.begin(); sit != (*it).ratedMovies.end(); ++sit)
 		{
 			userReviewMatrix[(*it).userID][m.movieIDMapper[(*sit).movieID]] = (*sit).rating;
+			originalReviewMatrix[(*it).userID][m.movieIDMapper[(*sit).movieID]] = true;
 		}
 	}
 }
@@ -85,23 +102,60 @@ cudaError_t doAlgo()
 	float ** userReviewMatrix = createBlankUserMatrix(r, m.movieCount);
 	bool ** originalReviewMatrix = createBlankUserDidReviewMatrix(r, m.movieCount);
 	populateUserReviewMatrix(userReviewMatrix, originalReviewMatrix, r, m);
-	short ** d_movieMatrix;
-	short * devptr;
-	size_t pitch;
+
+	float ** d_movieMatrix;
+	float ** d_userReviewMatrix;
+	bool ** d_didReviewMatrix;
+
+	float * devptrMovie;
+	float * devptrUser;
+	bool * devptrUserDidReview;
+
+	size_t pitchMovie;
+	size_t pitchUserReview;
+	size_t pitchDidReview;
+
 	cudaError_t cudaStatus;
-
-
-	cudaStatus = cudaMalloc((void**)&d_movieMatrix, m.movieCount * sizeof(short*));
-	cudaMallocPitch(&devptr, &pitch, (m.movieCount + 1) * sizeof(short), (m.movieCount + 1));
-	cudaMemcpy2D(d_movieMatrix, pitch, movieMatrix, (m.movieCount + 1) * sizeof(short), (m.movieCount + 1) * sizeof(short), m.movieCount + 1, cudaMemcpyHostToDevice);
- 
-	//short** temp_d_ptrs = (short **)malloc(sizeof(short*) * mainSize);
-	for (int i = 0; i < m.movieCount; i++)
+	int movieMatrixColumns = m.movieCount + 1;
+	int userReviewColumns = m.movieCount + 1;
+	int userReviewRows = r.users.size() + 1;
+	/*
+	float** temp_d_ptrs = (float **)malloc(sizeof(float*) * userReviewRows);
+	for (int i = 0; i < userReviewColumns+1; i++)
 	{
-		//cudaMalloc((void**)&temp_d_ptrs[i], sizeof(int)* (main[i][0] + 1)); // allocate for 1 int in each int pointer
-		//cudaMemcpy(temp, main[i], sizeof(int) * getsize, cudaMemcpyHostToDevice); // copy data
+		cudaMalloc((void**)&temp_d_ptrs[i], sizeof(float)* (userReviewColumns)); // allocate for 1 int in each int pointer
+		cudaMemcpy(temp, main[i], sizeof(int) * getsize, cudaMemcpyHostToDevice); // copy data
 		//cudaMemcpy(devMain + i, &temp, sizeof(int*), cudaMemcpyHostToDevice);
+	}*/
+
+	/*
+	cudaStatus = cudaMalloc((void**)&d_movieMatrix, movieMatrixColumns * sizeof(float*));
+	cudaMallocPitch(&devptrMovie, &pitchMovie, movieMatrixColumns * sizeof(float), movieMatrixColumns);
+	cudaMemcpy2D(d_movieMatrix, pitchMovie, movieMatrix, (m.movieCount + 1) * sizeof(float), (m.movieCount + 1) * sizeof(float), m.movieCount + 1, cudaMemcpyHostToDevice);
+	*/
+	cudaStatus = cudaMalloc((void***)&d_userReviewMatrix, userReviewRows * sizeof(float*));
+	for (int i = 0; i < userReviewRows; i++)
+	{
+		float * temp;
+		cudaMalloc((void**) &(temp), sizeof(float)*userReviewColumns);
+		cudaMemcpy(temp, userReviewMatrix[i], sizeof(float) * userReviewColumns, cudaMemcpyHostToDevice);
+		cudaMemcpy(d_userReviewMatrix + i, &temp, sizeof(float*), cudaMemcpyHostToDevice);
 	}
+
+	cudaStatus = cudaMalloc((void***)&d_movieMatrix, movieMatrixColumns * sizeof(float*));
+	for (int i = 0; i < movieMatrixColumns; i++)
+	{
+		float * temp;
+		cudaMalloc((void**) &(temp), sizeof(float)*movieMatrixColumns);
+		cudaMemcpy(temp, movieMatrix[i], sizeof(float) * movieMatrixColumns, cudaMemcpyHostToDevice);
+		cudaMemcpy(d_movieMatrix + i, &temp, sizeof(float*), cudaMemcpyHostToDevice);
+	}
+
+
+	/*cudaMallocPitch(&devptrUser, &pitchUserReview, userReviewColumns * sizeof(float), userReviewRows);
+	cudaMemcpy2D(d_userReviewMatrix, pitchUserReview, userReviewMatrix, userReviewColumns * sizeof(float), userReviewColumns * sizeof(float), userReviewRows, cudaMemcpyHostToDevice);
+	*/
+	test << <1, userReviewRows >> > (d_userReviewMatrix, );
 
 
 Error:
