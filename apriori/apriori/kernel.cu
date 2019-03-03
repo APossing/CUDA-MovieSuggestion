@@ -73,38 +73,9 @@ __global__ void computeSimularMoviesType2(float**userArray, unsigned short *user
 
 		if (movie1 < 11 && movie2 < 11)
 			printf("(%d,%d): \t%lf, %lf, %lf %lf\n", movie1, movie2, sqrt(bottomLeft), sqrt(bottomRight), top, top / (sqrt(bottomLeft) * sqrt(bottomRight)));
-
 		movieArray[movie1][movie2] = movieArray[movie2][movie1] = top / (sqrt(bottomLeft) * sqrt(bottomRight));
-		if (movie1 < 11 && movie2 < 11)
-			printf("\t%d,%d: \t%lf, %lf, %lf %lf\n", movie1, movie2, bottomLeft, bottomRight, top, movieArray[movie2][movie1]);
-
 	}
 
-}
-
-
-
-
-__global__ void computeAverage(float**mainArray, unsigned short *mainArrayColumns, unsigned short *mainArrayRows)
-{
-	short row = blockIdx.x * blockDim.x + threadIdx.x+1;
-	float cur;
-	if (row < *mainArrayRows)
-	{
-		double total = 0;
-		unsigned short count = 0;
-		for (short i = 1; i < *mainArrayColumns; i++)
-		{
-			cur = mainArray[row][i];
-			if (cur >= 0 && cur <= 5)
-			{
-				total += mainArray[row][i];
-				count++;
-			}
-		}
-		mainArray[row][0] = total / count;
-		//printf("%d, %d, %f, %d, %f\n", row, 0, total, count, mainArray[row][0]);
-	}
 }
 
 __global__ void computeRecommendedMovies(float**userArray, unsigned short *userArrayColumns, unsigned short *userArrayRows, float**movieArray, bool **didSelect)
@@ -168,61 +139,6 @@ __global__ void computeRecommendedMovies(float**userArray, unsigned short *userA
 	}
 
 }
-
-
-__global__ void computeSimularMovies(float**userArray, unsigned short *userArrayRows, float**movieArray, unsigned short *movieArrayColumns)
-{
-	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
-	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
-	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 >= movie2)
-	{
-		//printf("%d,%d\n", movie1, movie2);
-		
-		double top = 0;
-		float topLeft = 0;
-		float topRight = 0;
-		double bottomLeft = 0;
-		double bottomRight = 0;
-
-		for (short i = 1; i < *userArrayRows; i++)	//for every user
-		{
-			topLeft = userArray[i][movie1];			//get user rating for movie 1
-			if (topLeft < 0 || topLeft > 5)			//if its not filled out by user, set to 0
-				topLeft = 0;
-			else
-			{
-				topLeft -= userArray[i][0]; //subtracting the average for that user
-				if (movie1 == 2 && movie2 == 1)
-					printf("\ntopLeft: %lf", topLeft);
-			}				
-
-			topRight = userArray[i][movie2]; 		//get user rating for movie 2
-			if (topRight < 0 || topRight > 5)		//if its not filled out by user, set to 0
-				topRight = 0;	
-			else
-			{
-				topRight -= userArray[i][0]; //subtracting the average for that user
-				if (movie1 == 2 && movie2 == 1)
-					printf("\ntopRight: %lf", topRight);
-			}							//subtracting the average for that user
-
-			top += topRight * topLeft;				//compute this one and add to sum
-
-			bottomLeft += topLeft * topLeft;		//A^2 and add to A's sum
-			bottomRight += topRight * topRight;		//B^2 and add to B's sum
-		}
-
-		if (movie1 < 11 && movie2 < 11)
-			printf("(%d,%d): \t%lf, %lf, %lf %lf\n", movie1, movie2, sqrt(bottomLeft), sqrt(bottomRight), top, top / (sqrt(bottomLeft) * sqrt(bottomRight)));
-
-		movieArray[movie1][movie2] = movieArray[movie2][movie1] = top / (sqrt(bottomLeft) * sqrt(bottomRight));
-		if (movie1 < 11 && movie2 < 11)
-			printf("\t%d,%d: \t%lf, %lf, %lf %lf\n", movie1, movie2, bottomLeft, bottomRight, top, movieArray[movie2][movie1]);
-
-	}
-
-}
-
 float ** createArr(int size)
 {
 	float ** arr = (float**)malloc(sizeof(float*) * size);
