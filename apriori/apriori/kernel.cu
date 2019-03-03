@@ -31,6 +31,81 @@ __global__ void findFrequents(int**mainArray, unsigned int *counts)
 		//atomicAdd(counts + mainArray[i][j], 1);
 	}
 }*/
+
+__global__ void computeAverageType2(float**mainArray, unsigned short *mainArrayColumns, unsigned short *mainArrayRows)
+{
+	short column = blockIdx.x * blockDim.x + threadIdx.x + 1;
+	float cur;
+	if (column < *mainArrayColumns)
+	{
+		double total = 0;
+		unsigned short count = 0;
+		for (short i = 1; i < *mainArrayRows; i++)
+		{
+			cur = mainArray[i][column];
+			if (cur >= 0 && cur <= 5)
+			{
+				total += cur;
+				count++;
+			}
+		}
+		mainArray[0][column] = total / count;
+		//printf("%d, %d, %f, %d, %f\n", row, 0, total, count, mainArray[row][0]);
+	}
+}
+
+__global__ void computeSimularMoviesType2(float**userArray, unsigned short *userArrayRows, float**movieArray, unsigned short *movieArrayColumns)
+{
+	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
+	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
+	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 >= movie2)
+	{
+		//printf("%d,%d\n", movie1, movie2);
+
+		double top = 0;
+		float topLeft = 0;
+		float topRight = 0;
+		double bottomLeft = 0;
+		double bottomRight = 0;
+
+		for (short i = 1; i < *userArrayRows; i++)	//for every user
+		{
+			topLeft = userArray[i][movie1];			//get user rating for movie 1
+			if (topLeft < 0 || topLeft > 5)			//if its not filled out by user, set to 0
+				topLeft = 0;
+			else
+			{
+				topLeft -= userArray[0][movie1];	//subtracting the average for that movie
+			}
+
+			topRight = userArray[i][movie2]; 		//get user rating for movie 2
+			if (topRight < 0 || topRight > 5)		//if its not filled out by user, set to 0
+				topRight = 0;
+			else
+			{
+				topRight -= userArray[0][movie2]; //subtracting the average for that movie
+			}							
+
+			top += topRight * topLeft;				//compute this one and add to sum
+
+			bottomLeft += topLeft * topLeft;		//A^2 and add to A's sum
+			bottomRight += topRight * topRight;		//B^2 and add to B's sum
+		}
+
+		if (movie1 < 11 && movie2 < 11)
+			printf("(%d,%d): \t%lf, %lf, %lf %lf\n", movie1, movie2, sqrt(bottomLeft), sqrt(bottomRight), top, top / (sqrt(bottomLeft) * sqrt(bottomRight)));
+
+		movieArray[movie1][movie2] = movieArray[movie2][movie1] = top / (sqrt(bottomLeft) * sqrt(bottomRight));
+		if (movie1 < 11 && movie2 < 11)
+			printf("\t%d,%d: \t%lf, %lf, %lf %lf\n", movie1, movie2, bottomLeft, bottomRight, top, movieArray[movie2][movie1]);
+
+	}
+
+}
+
+
+
+
 __global__ void computeAverage(float**mainArray, unsigned short *mainArrayColumns, unsigned short *mainArrayRows)
 {
 	short row = blockIdx.x * blockDim.x + threadIdx.x+1;
@@ -49,7 +124,7 @@ __global__ void computeAverage(float**mainArray, unsigned short *mainArrayColumn
 			}
 		}
 		mainArray[row][0] = total / count;
-		printf("%d, %d, %f, %d, %f\n", row, 0, total, count, mainArray[row][0]);
+		//printf("%d, %d, %f, %d, %f\n", row, 0, total, count, mainArray[row][0]);
 	}
 }
 
@@ -129,31 +204,42 @@ __global__ void computeSimularMovies(float**userArray, unsigned short *userArray
 		float topRight = 0;
 		double bottomLeft = 0;
 		double bottomRight = 0;
-		for (short i = 1; i < *userArrayRows; i++)
+
+		for (short i = 1; i < *userArrayRows; i++)	//for every user
 		{
-			//if (i == 11 && movie2 == 149)
-				//printf("\n\n\n\n\n\n\n\n%d,%d,%lf, %lf\n\n",movie1,movie2, userArray[i][movie1], userArray[i][movie2]);
-			topLeft = userArray[i][movie1];
-			if (topLeft < 0 || topLeft > 5)
+			topLeft = userArray[i][movie1];			//get user rating for movie 1
+			if (topLeft < 0 || topLeft > 5)			//if its not filled out by user, set to 0
 				topLeft = 0;
-			topLeft -= userArray[i][0];
+			else
+			{
+				topLeft -= userArray[i][0]; //subtracting the average for that user
+				if (movie1 == 2 && movie2 == 1)
+					printf("\ntopLeft: %lf", topLeft);
+			}				
 
-			topRight = userArray[i][movie2];
-			if (topRight < 0 || topRight > 5)
-				topRight = 0;
-			topRight -= userArray[i][0];
+			topRight = userArray[i][movie2]; 		//get user rating for movie 2
+			if (topRight < 0 || topRight > 5)		//if its not filled out by user, set to 0
+				topRight = 0;	
+			else
+			{
+				topRight -= userArray[i][0]; //subtracting the average for that user
+				if (movie1 == 2 && movie2 == 1)
+					printf("\ntopRight: %lf", topRight);
+			}							//subtracting the average for that user
 
-			top += topRight * topLeft;
+			top += topRight * topLeft;				//compute this one and add to sum
 
-			bottomLeft += topLeft * topLeft;
-			bottomRight += topRight * topRight;
+			bottomLeft += topLeft * topLeft;		//A^2 and add to A's sum
+			bottomRight += topRight * topRight;		//B^2 and add to B's sum
 		}
+
 		if (movie1 < 11 && movie2 < 11)
-			printf("%d,%d: \t%lf, %lf, %lf %lf\n", movie1, movie2, bottomLeft, bottomRight, top, top / (sqrt(bottomLeft) * sqrt(bottomRight)));
+			printf("(%d,%d): \t%lf, %lf, %lf %lf\n", movie1, movie2, sqrt(bottomLeft), sqrt(bottomRight), top, top / (sqrt(bottomLeft) * sqrt(bottomRight)));
 
 		movieArray[movie1][movie2] = movieArray[movie2][movie1] = top / (sqrt(bottomLeft) * sqrt(bottomRight));
 		if (movie1 < 11 && movie2 < 11)
 			printf("\t%d,%d: \t%lf, %lf, %lf %lf\n", movie1, movie2, bottomLeft, bottomRight, top, movieArray[movie2][movie1]);
+
 	}
 
 }
@@ -278,10 +364,11 @@ cudaError_t doAlgo()
 
 	int blockX = ceil(userReviewRows / 256.0);
 	int blockY = ceil(userReviewRows / 16.0);
+	int blockXType2 = ceil(userReviewColumns / 256);
 
 
 
-	computeAverage << <blockX, 256 >> > (d_userReviewMatrix, d_userReviewMatrixColumns, d_userReviewMatrixRows);
+	computeAverageType2 << <blockXType2, 256 >> > (d_userReviewMatrix, d_userReviewMatrixColumns, d_userReviewMatrixRows);
 	printf("SUCCESS");
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
@@ -293,7 +380,7 @@ cudaError_t doAlgo()
 	blockY = ceil(movieMatrixColumns / 16.0);
 
 
-	computeSimularMovies<<<dim3(blockX, blockY), dim3(16,16) >>>(d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
+	computeSimularMoviesType2<<<dim3(blockX, blockY), dim3(16,16) >>>(d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
 	cudaStatus = cudaGetLastError();
 	if (cudaSuccess != cudaGetLastError())
 		printf("Error!\n");
@@ -309,32 +396,55 @@ cudaError_t doAlgo()
 	cudaStatus = cudaGetLastError();
 	if (cudaSuccess != cudaGetLastError())
 		printf("Error!\n");
+	printf("before");
 	cudaStatus = cudaGetLastError();
 	cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
 		goto Error;
 	}
-
+	printf("past");
 	printf("%f, %f, %lf, %lf\n%lf, %lf, %lf, %lf\n", movieMatrix[1][1], movieMatrix[1][2], movieMatrix[1][3], movieMatrix[1][4], movieMatrix[2][1], movieMatrix[2][2], movieMatrix[2][3], movieMatrix[2][4]);
+	/*
 	for (int i = 0; i < movieMatrixColumns; i++)
 	{
-		float * temp = (float *)malloc(sizeof(float) * movieMatrixColumns);
-		movieMatrix[i] = temp;
-		cudaError_t errr = cudaMemcpy(temp, d_movieMatrix + i, sizeof(float) *movieMatrixColumns, cudaMemcpyDeviceToHost);
+		float * temp;
+		cudaMemcpy(movieMatrix[i], temp, sizeof(float) * movieMatrixColumns, cudaMemcpyDeviceToHost);
+		cudaMemcpy(&temp, d_movieMatrix + i, sizeof(float*), cudaMemcpyDeviceToHost);
+	}*/
+
+
+	for (int i = 0; i < movieMatrixColumns; i++)
+	{
+		float temp[10000];
+		temp[1] = 0.5;
+		printf("%f\n", temp[1]);
+		cudaError_t errr1 = cudaMemcpy(movieMatrix, temp, sizeof(float) * movieMatrixColumns, cudaMemcpyDeviceToHost);
+
+
 
 		//cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
 
 		//cudaMemcpy(temp, movieMatrix[i], sizeof(float) * movieMatrixColumns, cudaMemcpyHostToDevice);
 		//cudaMemcpy(d_movieMatrix + i, &temp, sizeof(float*), cudaMemcpyHostToDevice);
 		//cudaError_t errr = cudaMemcpy(movieMatrix[i], d_movieMatrix+i, sizeof(float) * movieMatrixColumns, cudaMemcpyDeviceToHost);
-		errr = cudaGetLastError();
-		printf("h_array: %d, %s\n", movieMatrix[i][1], cudaGetErrorString(cudaGetLastError()));
+		printf("%f\n", temp[1]);
+		//printf("h_array: %d, %s\n", movieMatrix[i][1], errr);
+		printf("h_array: %s\n", errr1);
 	}
 	printf("%f, %f, %lf, %lf\n%lf, %lf, %lf, %lf", movieMatrix[1][1], movieMatrix[1][2], movieMatrix[1][3], movieMatrix[1][4], movieMatrix[2][1], movieMatrix[2][2], movieMatrix[2][3], movieMatrix[2][4]);
 
 
 Error:
+	for (int i = 0; i < movieMatrixColumns; i++)
+	{
+		cudaFree(d_movieMatrix+i);
+	}
+	for (int i = 0; i < userReviewRows; i++)
+	{
+		cudaFree(d_userReviewMatrix + i);
+		cudaFree(d_didReviewMatrix + i);
+	}
 	cudaFree(d_didReviewMatrix);
 	cudaFree(d_movieMatrix);
 	cudaFree(d_userReviewMatrix);
