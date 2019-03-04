@@ -74,7 +74,8 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 > movie2)
 	{
 		//printf("%d,%d\n", movie1, movie2);
-
+		if (movie2 == 8500)
+			printf("movie1,movie2:%d,%d\n", movie1, movie2);
 		double top = 0;
 		double topPrev = 0;
 		float topLeft = 0;
@@ -89,35 +90,33 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 					
 			if (topLeft < 1 || topLeft > 5)									//if its not filled out by user, set to 0
 				topLeft = 0;
-			else
-			{
-				topLeft -= userArray[0 + movie1];							//subtracting the average for that movie
-			}
+			//else
+				//topLeft -= movieArray[0 + movie1];							//subtracting the average for that movie
 
 			topRight = userArray[i * (*movieArrayColumns) + movie2]; 		//get user rating for movie 2
 			if (topRight < 1 || topRight > 5)								//if its not filled out by user, set to 0
 				topRight = 0;
-			else
-			{
-				topRight -= userArray[0 + movie2];							//subtracting the average for that movie
-			}							
+			//else
+			//{
+				//topRight -= movieArray[0 + movie2];							//subtracting the average for that movie
+			//}							
 
 			top += topRight * topLeft;										//compute this one and add to sum
 
-			bottomLeft += topLeft * topLeft;								//A^2 and add to A's sum
-			bottomRight += topRight * topRight;								//B^2 and add to B's sum				
+			//bottomLeft += topLeft * topLeft;								//A^2 and add to A's sum
+			//bottomRight += topRight * topRight;								//B^2 and add to B's sum				
 		}
 
 		if (bottomLeft == 0 || bottomRight == 0)
 		{
-			movieArray[movie1* (*movieArrayColumns) + movie2] = -5;
-			movieArray[movie2* (*movieArrayColumns) + movie1] = -5;
+			movieArray[movie1* (*movieArrayColumns) + movie2] = 0;
+			movieArray[movie2* (*movieArrayColumns) + movie1] = 0;
 		}
 		else
 		{
 			float temp = top / (sqrt(bottomLeft) * sqrt(bottomRight));
-			movieArray[movie1* (*movieArrayColumns) + movie2] = -5;
-			movieArray[movie2* (*movieArrayColumns) + movie1] = -5;
+			movieArray[movie1* (*movieArrayColumns) + movie2] = temp;
+			movieArray[movie2* (*movieArrayColumns) + movie1] = temp;
 
 		}
 
@@ -126,14 +125,7 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 	}
 
 }
-__global__ void computeSimularMoviesType2TEST(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
-{
-	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
-	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
-	if (movieArray[movie1* (*movieArrayColumns) + movie2] != -5)
-		printf("WHY U FAIL ON ME??? (%d,%d,%f)\n", movie1, movie2, movieArray[movie1* (*movieArrayColumns) + movie2]);
 
-}
 
 //void quicksort(float)
 
@@ -197,6 +189,12 @@ __global__ void computeRecommendedMovies(float*userArray, unsigned short *userAr
 	}
 
 }
+
+__global__ void computeRecommendedMovies(float * array)
+{
+	printf("%f", array[3000 * 9200]);
+}
+
 
 void outputData(unsigned short * recomendedMoviesMatrix, unsigned short rows, unsigned short columns, MovieReader m)
 {
@@ -274,6 +272,8 @@ cudaError_t doAlgo()
 	unsigned short recomendedMoviesMatrixColumns = 5;
 	unsigned short recomendedMoviesMatrixRows = (r.users.size() + 1);
 
+	int a = sizeof(unsigned short) * recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns;
+
 
 	cudaMalloc((void**)&d_recomendedMoviesMatrix, sizeof(unsigned short) * recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns);
 	cudaStatus = cudaMemcpy(d_recomendedMoviesMatrix, recomendedMoviesMatrix, sizeof(unsigned short)* recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns, cudaMemcpyHostToDevice);
@@ -297,12 +297,17 @@ cudaError_t doAlgo()
 	cudaStatus = cudaMalloc((void**)&d_userReviewMatrix, sizeof(float) * userReviewRows * userReviewColumns);
 	cudaStatus = cudaMemcpy(d_userReviewMatrix, userReviewMatrix, sizeof(float)* userReviewRows * userReviewColumns, cudaMemcpyHostToDevice);
 
+	short b = sizeof(float) * movieMatrixColumns * movieMatrixColumns;
 	cudaStatus = cudaMalloc((void**)&d_movieMatrix, sizeof(float) * movieMatrixColumns * movieMatrixColumns);
 	cudaStatus = cudaMemcpy(d_movieMatrix, movieMatrix, sizeof(float) * movieMatrixColumns * movieMatrixColumns, cudaMemcpyHostToDevice);
 
 	cudaStatus = cudaMalloc((void**)&d_didReviewMatrix, sizeof(bool) * userReviewRows * userReviewColumns);
 	cudaStatus = cudaMemcpy(d_didReviewMatrix, originalReviewMatrix, sizeof(bool) * userReviewRows * userReviewColumns, cudaMemcpyHostToDevice);
 
+	computeRecommendedMovies<<<1,1>>>(d_movieMatrix);
+	cudaDeviceSynchronize();
+	cudaStatus = cudaGetLastError();
+	str2 = cudaGetErrorString(cudaStatus);
 
 
 	int blockX = ceil(userReviewRows / 256.0);
@@ -342,22 +347,6 @@ cudaError_t doAlgo()
 		fprintf(stderr, "cudaDeviceSynchronize returned error code %s after launching computeSimularMoviesType2!\n", cudaGetErrorString(cudaStatus));
 		goto Error;
 	}
-
-	computeSimularMoviesType2TEST << <dim3(blockX, blockY), dim3(16, 16) >> > (d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
-
-	cudaStatus = cudaGetLastError();
-	if (cudaSuccess != cudaGetLastError())
-		printf("Error!\n");
-	cudaStatus = cudaGetLastError();
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	str2 = cudaGetErrorString(cudaStatus);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaDeviceSynchronize returned error code %s after launching computeSimularMoviesType2!\n", cudaGetErrorString(cudaStatus));
-		goto Error;
-	}
-
-
 
 	blockX = ceil(movieMatrixColumns / 16.0);
 	blockY = ceil(userReviewRows / 16.0);
