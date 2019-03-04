@@ -110,20 +110,28 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 
 		if (bottomLeft == 0 || bottomRight == 0)
 		{
-			movieArray[movie1* (*movieArrayColumns) + movie2] = 0;
-			movieArray[movie2* (*movieArrayColumns) + movie1] = 0;
+			movieArray[movie1* (*movieArrayColumns) + movie2] = -5;
+			movieArray[movie2* (*movieArrayColumns) + movie1] = -5;
 		}
 		else
 		{
 			float temp = top / (sqrt(bottomLeft) * sqrt(bottomRight));
-			movieArray[movie1* (*movieArrayColumns) + movie2] = temp;
-			movieArray[movie2* (*movieArrayColumns) + movie1] = temp;
+			movieArray[movie1* (*movieArrayColumns) + movie2] = -5;
+			movieArray[movie2* (*movieArrayColumns) + movie1] = -5;
 
 		}
 
 		if (movie1 < 10 && movie2 < 10)
 			printf("(movie1, movie2, top, BL, BR, calc, val1, val2)->(%d,%d,%f,%f,%f,%f,%f,%f)\n", movie1, movie2, top, bottomLeft, bottomRight, top / (sqrt(bottomLeft) * sqrt(bottomRight)), movieArray[movie1* (*movieArrayColumns) + movie2], movieArray[movie2* (*movieArrayColumns) + movie1]);
 	}
+
+}
+__global__ void computeSimularMoviesType2TEST(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
+{
+	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
+	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
+	if (movieArray[movie1* (*movieArrayColumns) + movie2] != -5)
+		printf("WHY U FAIL ON ME??? (%d,%d,%f)\n", movie1, movie2, movieArray[movie1* (*movieArrayColumns) + movie2]);
 
 }
 
@@ -240,9 +248,8 @@ cudaError_t doAlgo()
 
 	for (int i = 1; i < (m.movieCount + 1); i++)
 	{
-		movieMatrix[i*(m.movieCount + 1) + i] = 0;
+		movieMatrix[i*(m.movieCount + 1) + i] = 1;
 	}
-
 	float * userReviewMatrix = (float *)calloc((r.users.size()+1) * (m.movieCount + 1), sizeof(float));
 	bool * originalReviewMatrix = (bool *)calloc( (r.users.size() + 1) * (m.movieCount + 1), sizeof(bool));
 	unsigned short * recomendedMoviesMatrix = (unsigned short*)calloc((r.users.size() + 1) * 5, sizeof(unsigned short));
@@ -321,10 +328,9 @@ cudaError_t doAlgo()
 
 	blockX = ceil(movieMatrixColumns / 16.0);
 	blockY = ceil(movieMatrixColumns / 16.0);
-	system("PAUSE");
 
 	computeSimularMoviesType2<<<dim3(blockX, blockY), dim3(16,16) >>>(d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
-	system("PAUSE");
+
 	cudaStatus = cudaGetLastError();
 	if (cudaSuccess != cudaGetLastError())
 		printf("Error!\n");
@@ -336,6 +342,23 @@ cudaError_t doAlgo()
 		fprintf(stderr, "cudaDeviceSynchronize returned error code %s after launching computeSimularMoviesType2!\n", cudaGetErrorString(cudaStatus));
 		goto Error;
 	}
+
+	computeSimularMoviesType2TEST << <dim3(blockX, blockY), dim3(16, 16) >> > (d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
+
+	cudaStatus = cudaGetLastError();
+	if (cudaSuccess != cudaGetLastError())
+		printf("Error!\n");
+	cudaStatus = cudaGetLastError();
+	cudaDeviceSynchronize();
+	cudaStatus = cudaGetLastError();
+	str2 = cudaGetErrorString(cudaStatus);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaDeviceSynchronize returned error code %s after launching computeSimularMoviesType2!\n", cudaGetErrorString(cudaStatus));
+		goto Error;
+	}
+
+
+
 	blockX = ceil(movieMatrixColumns / 16.0);
 	blockY = ceil(userReviewRows / 16.0);
 
