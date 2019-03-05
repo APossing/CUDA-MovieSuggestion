@@ -67,14 +67,64 @@ __global__ void loadTop5(float*userArray, unsigned short *userArrayRows, unsigne
 		}
 	}
 }
-__global__ void computeSimularMoviesType2(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
+
+__global__ void computeSimularMoviesType2TEST(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
 {
 	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
 	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
 	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 > movie2)
 	{
+		for (short i = 1; i < *userArrayRows; i++)	//for every user
+		{
+			if (userArray[i* (*movieArrayColumns) + movie1] > 1)
+				printf("(%d,%f)", i, userArray[i* (*movieArrayColumns) + movie1]);
+		}
+	}
+}
+
+/*__global__ void computeSimularMoviesType2(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
+{
+	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
+	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
+	int temp = 0;
+	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 > movie2)
+	{
 		//printf("%d,%d\n", movie1, movie2);
-		if (movie2 == 8500)
+		if (movie2 == 9124)
+			printf("movie1,movie2:%d,%d\n", movie1, movie2);
+
+		printf("");
+		if (movie1 == 9124)
+			printf("(%d,%d)\n", movie1, movie2);
+		for (short i = 1; i < (*userArrayRows); i++)	//for every user
+		{
+			temp += userArray[(i%5) * (*movieArrayColumns) + movie1];			//get user rating for movie 1
+		}
+		if (temp > movie1)
+			userArray[5] = temp;
+	}
+	if (temp == 69)
+		printf("lOL");
+}*/
+
+
+__global__ void computeSimularMoviesType2(float*userArray, unsigned short *userArrayRows, float*movieArray, unsigned short *movieArrayColumns)
+{
+	short movie1 = blockDim.x * blockIdx.x + threadIdx.x + 1;
+	short movie2 = blockDim.y * blockIdx.y + threadIdx.y + 1;
+
+	for (int i = 0; i < (*userArrayRows); i++)
+	{
+		for (int j = 0; j < (*movieArrayColumns); j++)
+		{
+			printf("%f,%d,%d\n", userArray[i* (*movieArrayColumns) + j],i,j);
+		}
+	}
+
+	if (movie1 < *movieArrayColumns && movie2 < *movieArrayColumns && movie1 > movie2)
+	{
+		//printf("%d,%d\n", movie1, movie2);
+		if (movie2 == 9124)
 			printf("movie1,movie2:%d,%d\n", movie1, movie2);
 		double top = 0;
 		double topPrev = 0;
@@ -84,27 +134,29 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 		double bottomRight = 0;
 		if (movie1 == 2 && movie2 == 1)
 			printf("");
-		for (short i = 1; i < *userArrayRows; i++)	//for every user
+		if (movie1 == 9124)
+			printf("(%d,%d)\n", movie1, movie2);
+		for (short i = 1; i < (*userArrayRows); i++)	//for every user
 		{
-			topLeft = userArray[i * (*movieArrayColumns) + movie1];			//get user rating for movie 1
+			topLeft = userArray[i* (*movieArrayColumns) + movie1 ];			//get user rating for movie 1
 					
 			if (topLeft < 1 || topLeft > 5)									//if its not filled out by user, set to 0
 				topLeft = 0;
-			//else
-				//topLeft -= movieArray[0 + movie1];							//subtracting the average for that movie
+			else
+				topLeft -= userArray[movie1];							//subtracting the average for that movie
 
-			topRight = userArray[i * (*movieArrayColumns) + movie2]; 		//get user rating for movie 2
+			topRight = userArray[i* (*movieArrayColumns) + movie2]; 		//get user rating for movie 2
 			if (topRight < 1 || topRight > 5)								//if its not filled out by user, set to 0
 				topRight = 0;
-			//else
-			//{
-				//topRight -= movieArray[0 + movie2];							//subtracting the average for that movie
-			//}							
+			else
+			{
+				topRight -= userArray[movie2];							//subtracting the average for that movie
+			}							
 
-			top += topRight * topLeft;										//compute this one and add to sum
+			top = topRight * topLeft;										//compute this one and add to sum
 
-			//bottomLeft += topLeft * topLeft;								//A^2 and add to A's sum
-			//bottomRight += topRight * topRight;								//B^2 and add to B's sum				
+			bottomLeft = topLeft * topLeft;								//A^2 and add to A's sum
+			bottomRight = topRight * topRight;								//B^2 and add to B's sum				
 		}
 
 		if (bottomLeft == 0 || bottomRight == 0)
@@ -119,6 +171,18 @@ __global__ void computeSimularMoviesType2(float*userArray, unsigned short *userA
 			movieArray[movie2* (*movieArrayColumns) + movie1] = temp;
 
 		}
+		clock_t start = clock();
+		clock_t now;
+		for (;;) {
+			now = clock();
+			clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
+			if (cycles >= 10000) {
+				break;
+			}
+		}
+		// Stored "now" in global memory here to prevent the
+		// compiler from optimizing away the entire loop.
+		*userArray = now;
 
 		if (movie1 < 10 && movie2 < 10)
 			printf("(movie1, movie2, top, BL, BR, calc, val1, val2)->(%d,%d,%f,%f,%f,%f,%f,%f)\n", movie1, movie2, top, bottomLeft, bottomRight, top / (sqrt(bottomLeft) * sqrt(bottomRight)), movieArray[movie1* (*movieArrayColumns) + movie2], movieArray[movie2* (*movieArrayColumns) + movie1]);
@@ -141,6 +205,8 @@ __global__ void computeRecommendedMovies(float*userArray, unsigned short *userAr
 	short top5Index[6];
 	if (movie < *userArrayColumns && user < *userArrayRows && !didSelect[user* (*userArrayColumns) + movie])
 	{
+		if (movie == 8500)
+			printf("user,movie:%d,%d\n", user, movie);
 		for (int i = 1; i < *userArrayColumns; i++)
 		{
 			if (didSelect[user * (*userArrayColumns) + i])
@@ -188,11 +254,6 @@ __global__ void computeRecommendedMovies(float*userArray, unsigned short *userAr
 		userArray[user * (*userArrayColumns) + movie] = sum / selected;
 	}
 
-}
-
-__global__ void computeRecommendedMovies(float * array)
-{
-	printf("%f", array[3000 * 9200]);
 }
 
 
@@ -259,6 +320,10 @@ cudaError_t doAlgo()
 	printf("-----------------Started Cuda data copy-----------------\n");
 	auto t5 = std::chrono::high_resolution_clock::now();
 
+	int a = 5;
+	a += 5 * 5;
+	a = a + 5 * 5;
+	a = a + (5 * 5);
 
 	float * d_movieMatrix;
 	float * d_userReviewMatrix;
@@ -271,9 +336,6 @@ cudaError_t doAlgo()
 	int userReviewRows = r.users.size() + 1;
 	unsigned short recomendedMoviesMatrixColumns = 5;
 	unsigned short recomendedMoviesMatrixRows = (r.users.size() + 1);
-
-	int a = sizeof(unsigned short) * recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns;
-
 
 	cudaMalloc((void**)&d_recomendedMoviesMatrix, sizeof(unsigned short) * recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns);
 	cudaStatus = cudaMemcpy(d_recomendedMoviesMatrix, recomendedMoviesMatrix, sizeof(unsigned short)* recomendedMoviesMatrixRows * recomendedMoviesMatrixColumns, cudaMemcpyHostToDevice);
@@ -304,12 +366,6 @@ cudaError_t doAlgo()
 	cudaStatus = cudaMalloc((void**)&d_didReviewMatrix, sizeof(bool) * userReviewRows * userReviewColumns);
 	cudaStatus = cudaMemcpy(d_didReviewMatrix, originalReviewMatrix, sizeof(bool) * userReviewRows * userReviewColumns, cudaMemcpyHostToDevice);
 
-	computeRecommendedMovies<<<1,1>>>(d_movieMatrix);
-	cudaDeviceSynchronize();
-	cudaStatus = cudaGetLastError();
-	str2 = cudaGetErrorString(cudaStatus);
-
-
 	int blockX = ceil(userReviewRows / 256.0);
 	int blockY = ceil(userReviewRows / 16.0);
 	int blockXType2 = ceil(userReviewColumns / 256);
@@ -318,6 +374,13 @@ cudaError_t doAlgo()
 	printf("-------cuda data copy completed in %d milliseconds------\n\n\n", std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count());
 	printf("--------Started Compute Averages for movies-------------\n");
 	auto t7 = std::chrono::high_resolution_clock::now();
+	//computeSimularMoviesType2TEST << <blockXType2, 256 >> > (d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching computeAverageType2!\n", cudaGetErrorString(cudaStatus));
+		goto Error;
+	}
+
 
 	computeAverageType2 << <blockXType2, 256 >> > (d_userReviewMatrix, d_userReviewMatrixColumns, d_userReviewMatrixRows);
 	cudaStatus = cudaDeviceSynchronize();
@@ -331,10 +394,10 @@ cudaError_t doAlgo()
 	printf("--------Started compute simularMovies-------------\n");
 	auto t9 = std::chrono::high_resolution_clock::now();
 
-	blockX = ceil(movieMatrixColumns / 16.0);
-	blockY = ceil(movieMatrixColumns / 16.0);
-
-	computeSimularMoviesType2<<<dim3(blockX, blockY), dim3(16,16) >>>(d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
+	blockX = ceil(movieMatrixColumns / 21.0);
+	blockY = ceil(movieMatrixColumns / 21.0);
+	//_sleep(10000);
+	computeSimularMoviesType2<<<dim3(1, 1), dim3(1,1) >>>(d_userReviewMatrix, d_userReviewMatrixRows, d_movieMatrix, d_userReviewMatrixColumns);
 
 	cudaStatus = cudaGetLastError();
 	if (cudaSuccess != cudaGetLastError())
