@@ -11,19 +11,19 @@
 #include <sstream>
 using namespace std;
 
-__global__ void computeAverageType2(float*mainArray, unsigned short *mainArrayColumns, unsigned short *mainArrayRows)
+__global__ void centerMatrix(float*userArray, unsigned short *userArrayColumns, unsigned short *userArrayRows)
 {
-	short column = blockIdx.x * blockDim.x + threadIdx.x + 1;
+	short column = blockIdx.x * blockDim.x + threadIdx.x + 1; //0th column is empty on purpose
 	float cur;
 	if (column == 3)
 		printf("");
-	if (column < *mainArrayColumns)
+	if (column < *userArrayColumns)
 	{
 		double total = 0;
 		unsigned short count = 0;
-		for (short i = 1; i < *mainArrayRows; i++)
+		for (short i = 1; i < *userArrayRows; i++)
 		{
-			cur = mainArray[i * (*mainArrayColumns) + column];
+			cur = userArray[i * (*userArrayColumns) + column];
 			if (cur > 0 && cur <= 5)
 			{
 				total += cur;
@@ -31,14 +31,14 @@ __global__ void computeAverageType2(float*mainArray, unsigned short *mainArrayCo
 			}
 		}
 		float const average = total / count;
-		mainArray[column] = average;
+		userArray[column] = average;
 
-		for (short i = 1; i < *mainArrayRows; i++)
+		for (short i = 1; i < *userArrayRows; i++)
 		{
-			cur = mainArray[i * (*mainArrayColumns) + column];
+			cur = userArray[i * (*userArrayColumns) + column];
 			if (cur > 0 && cur <= 5)
 			{
-				mainArray[i* (*mainArrayColumns) + column] = cur - average;
+				userArray[i* (*userArrayColumns) + column] = cur - average;
 			}
 		}
 	}
@@ -310,7 +310,7 @@ cudaError_t doAlgo()
 	auto t7 = std::chrono::high_resolution_clock::now();
 
 
-	computeAverageType2 << <blockXType2, 256 >> > (d_userReviewMatrix, d_userReviewMatrixColumns, d_userReviewMatrixRows);
+	centerMatrix<< <blockXType2, 256 >> > (d_userReviewMatrix, d_userReviewMatrixColumns, d_userReviewMatrixRows);
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching computeAverageType2!\n", cudaGetErrorString(cudaStatus));
