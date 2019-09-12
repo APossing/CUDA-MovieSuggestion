@@ -4,7 +4,7 @@
 #include <vector>
 #include <fstream>
 #include "User.h"
-#include "Movie.h"
+#include "..//MovieResources//Movie.h"
 using namespace std;
 
 class UserTableReader

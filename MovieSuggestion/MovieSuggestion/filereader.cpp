@@ -1,4 +1,4 @@
-#include "fileReader2.h"
+#include "fileReader.h"
 
 
 
@@ -14,7 +14,7 @@ MovieReader::MovieReader(string fileName)
 	string temp;
 	getline(f, temp);
 	vector<tuple<string, string, string>> vec;
-	while (getline(f,temp))
+	while (getline(f, temp))
 	{
 		int j = 0;
 		string tempstr[3];

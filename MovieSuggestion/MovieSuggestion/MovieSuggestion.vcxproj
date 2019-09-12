@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -11,27 +11,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{8491C525-2462-48C3-B67E-332680B8A320}</ProjectGuid>
-    <RootNamespace>apriori</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{3C64AAB2-3BAD-413F-93BD-9DB3291F2327}</ProjectGuid>
+    <RootNamespace>MovieSuggestion</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -81,29 +80,30 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CUDABackground.h" />
-    <ClInclude Include="filereader2.h" />
-    <ClInclude Include="Movie.h" />
-    <ClInclude Include="MovieRating.h" />
-    <ClInclude Include="User.h" />
-    <ClInclude Include="UserTableReader.h" />
+    <Text Include="Data\data.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\movies.csv" />
+    <None Include="Data\ratings.csv" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CUDABackground.cpp" />
-    <ClCompile Include="filereader2.cpp" />
-    <ClCompile Include="Movie.cpp" />
-    <ClCompile Include="MovieRating.cpp" />
-    <ClCompile Include="User.cpp" />
-    <ClCompile Include="UserTableReader.cpp" />
+    <ClCompile Include="MovieResources\filereader.cpp" />
+    <ClCompile Include="MovieResources\Movie.cpp" />
+    <ClCompile Include="UserResources\MovieRating.cpp" />
+    <ClCompile Include="UserResources\User.cpp" />
+    <ClCompile Include="UserResources\UserTableReader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="movies.csv" />
+    <ClInclude Include="CUDABackground.h" />
+    <ClInclude Include="MovieResources\filereader.h" />
+    <ClInclude Include="MovieResources\Movie.h" />
+    <ClInclude Include="UserResources\MovieRating.h" />
+    <ClInclude Include="UserResources\User.h" />
+    <ClInclude Include="UserResources\UserTableReader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
   </ImportGroup>
 </Project>
