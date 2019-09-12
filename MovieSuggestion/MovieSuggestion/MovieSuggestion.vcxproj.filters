@@ -4,59 +4,62 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="MovieResources\Movie.cpp">
+      <Filter>MovieResources</Filter>
+    </ClCompile>
+    <ClCompile Include="MovieResources\filereader.cpp">
+      <Filter>MovieResources</Filter>
+    </ClCompile>
+    <ClCompile Include="UserResources\MovieRating.cpp">
+      <Filter>UserResources</Filter>
+    </ClCompile>
+    <ClCompile Include="UserResources\User.cpp">
+      <Filter>UserResources</Filter>
+    </ClCompile>
+    <ClCompile Include="UserResources\UserTableReader.cpp">
+      <Filter>UserResources</Filter>
+    </ClCompile>
     <ClCompile Include="CUDABackground.cpp" />
-    <ClCompile Include="filereader2.cpp">
-      <Filter>MovieResources</Filter>
-    </ClCompile>
-    <ClCompile Include="Movie.cpp">
-      <Filter>MovieResources</Filter>
-    </ClCompile>
-    <ClCompile Include="MovieRating.cpp">
-      <Filter>UserResources</Filter>
-    </ClCompile>
-    <ClCompile Include="User.cpp">
-      <Filter>UserResources</Filter>
-    </ClCompile>
-    <ClCompile Include="UserTableReader.cpp">
-      <Filter>UserResources</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MovieResources\Movie.h">
+      <Filter>MovieResources</Filter>
+    </ClInclude>
+    <ClInclude Include="MovieResources\filereader.h">
+      <Filter>MovieResources</Filter>
+    </ClInclude>
+    <ClInclude Include="UserResources\MovieRating.h">
+      <Filter>UserResources</Filter>
+    </ClInclude>
+    <ClInclude Include="UserResources\User.h">
+      <Filter>UserResources</Filter>
+    </ClInclude>
+    <ClInclude Include="UserResources\UserTableReader.h">
+      <Filter>UserResources</Filter>
+    </ClInclude>
     <ClInclude Include="CUDABackground.h" />
-    <ClInclude Include="filereader2.h">
-      <Filter>MovieResources</Filter>
-    </ClInclude>
-    <ClInclude Include="Movie.h">
-      <Filter>MovieResources</Filter>
-    </ClInclude>
-    <ClInclude Include="MovieRating.h">
-      <Filter>UserResources</Filter>
-    </ClInclude>
-    <ClInclude Include="User.h">
-      <Filter>UserResources</Filter>
-    </ClInclude>
-    <ClInclude Include="UserTableReader.h">
-      <Filter>UserResources</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="Data">
+      <UniqueIdentifier>{76106e35-e503-4f47-8004-c77fe9768f00}</UniqueIdentifier>
+    </Filter>
     <Filter Include="MovieResources">
-      <UniqueIdentifier>{078ad1e7-d15a-4b64-b43b-359eea20bd84}</UniqueIdentifier>
+      <UniqueIdentifier>{62ef7d93-ab55-46fd-85c9-30d75af07aad}</UniqueIdentifier>
     </Filter>
     <Filter Include="UserResources">
-      <UniqueIdentifier>{0dcb6988-0b54-475f-a2ac-8cdaaaf26d55}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Data">
-      <UniqueIdentifier>{fc174fe1-9223-4fe9-b9e0-afcd7c424ade}</UniqueIdentifier>
+      <UniqueIdentifier>{f4d8dab3-d33b-4a85-971f-ca4cc0d30709}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="movies.csv">
+    <None Include="Data\movies.csv">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\ratings.csv">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data.txt">
+    <Text Include="Data\data.txt">
       <Filter>Data</Filter>
     </Text>
   </ItemGroup>
